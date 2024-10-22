@@ -1,22 +1,34 @@
-"""
-This module takes care of starting the API Server, Loading the DB and Adding the endpoints
-"""
-from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import db, User
-from api.utils import generate_sitemap, APIException
-from flask_cors import CORS
+from flask import Blueprint, request, jsonify
+from werkzeug.security import generate_password_hash, check_password_hash
+from .models import User, db  # Asegúrate de que esto sea correcto para tu estructura
+from flask_jwt_extended import create_access_token
+from .models import User, db
 
+auth_bp = Blueprint('auth', __name__)
 api = Blueprint('api', __name__)
 
-# Allow CORS requests to this API
-CORS(api)
+@auth_bp.route('/signup', methods=['POST'])
+def signup():
+    data = request.get_json()
+    if not data or not data.get('email') or not data.get('password'):
+        return jsonify({'message': 'Missing email or password'}), 400
 
+    existing_user = User.query.filter_by(email=data['email']).first()
+    if existing_user:
+        return jsonify({'message': 'User already exists'}), 409
 
-@api.route('/hello', methods=['POST', 'GET'])
-def handle_hello():
+    new_user = User(email=data['email'], password=generate_password_hash(data['password'], method='sha256'))
+    db.session.add(new_user)
+    db.session.commit()
+    return jsonify({'message': 'User created'}), 201
 
-    response_body = {
-        "message": "Hello! I'm a message that came from the backend, check the network tab on the google inspector and you will see the GET request"
-    }
+@auth_bp.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    user = User.query.filter_by(email=data['email']).first()
+    if user and check_password_hash(user.password, data['password']):
+        access_token = create_access_token(identity=user.email)
+        return jsonify({'token': access_token}), 200
+    return jsonify({'message': 'Invalid credentials'}), 401
 
-    return jsonify(response_body), 200
+# Asegúrate de que tu archivo principal (app.py o similar) registre este blueprint

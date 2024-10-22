@@ -1,6 +1,5 @@
 import React from 'react';
-
-
+import { Link } from 'react-router-dom';
 
 const Navbar = () => {
   const handleLogout = () => {
@@ -10,8 +9,9 @@ const Navbar = () => {
 
   return (
     <nav>
-      <a href="/signup">Signup</a>
-      <a href="/login">Login</a>
+      <Link to="/Signup">Signup</Link>
+      <Link to="/login">Login</Link>
+      <Link to="/private">Private</Link> {/* Agrega un enlace a la página privada */}
       <button onClick={handleLogout}>Logout</button>
     </nav>
   );
